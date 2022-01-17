@@ -1,0 +1,402 @@
+<form theme="dark">
+  <search id="Base_Search_01">
+    <query>
+`data_model_wrangler_mapping_quality_search`
+| rename orig_index as index
+| rename orig_sourcetype as sourcetype
+| table _time modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct
+    </query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <search id="Base_Search_02">
+    <query>
+`data_model_wrangler_field_quality_search`
+| rename orig_index as index 
+| rename orig_sourcetype as sourcetype 
+| bin _time span=1d 
+| stats latest(percent_coverage) as percent_coverage
+    latest(distinct_value_count) as distinct_value_count
+    latest(event_count) as event_count
+    by _time modelName, index, field, sourcetype 
+| table _time modelName index sourcetype field event_count percent_coverage distinct_value_count
+    </query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <label>Data model wrangler</label>
+  <description>Note: To get the most accurate representation of current state, select Yesterday</description>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label>Duration</label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="datamodel">
+      <label>Data model</label>
+      <fieldForLabel>modelName</fieldForLabel>
+      <fieldForValue>modelName</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | stats count by modelName</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="index">
+      <label>Index</label>
+      <fieldForLabel>index</fieldForLabel>
+      <fieldForValue>index</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | stats count by index</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="sourcetype">
+      <label>Sourcetype</label>
+      <fieldForLabel>sourcetype</fieldForLabel>
+      <fieldForValue>sourcetype</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | stats count by sourcetype</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Mapping quality</title>
+      <single>
+        <search base="Base_Search_01">
+          <query>| search modelName="$datamodel$" 
+| search index="$index$" 
+| search sourcetype="$sourcetype$" 
+| stats avg(rec_field_coverage_pct) as avg_rec_field_coverage_pct by modelName
+| eval avg_rec_field_coverage_pct=round(avg_rec_field_coverage_pct, 2)</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">block</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0.0</option>
+        <option name="rangeColors">["0xdc4e41","0xf1813f","0xf8be34","0xa1c724","0x53a051"]</option>
+        <option name="rangeValues">[50,60,70,80]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unit">%</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+        <drilldown>
+          <link target="_self">/app/asset_management/data_model_mapping_quality?form.datamodel=$trellis.split.modelName$</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <title>Field data quality</title>
+      <single>
+        <search base="Base_Search_02">
+          <query> 
+| lookup datamodel_recommended_fields.csv datamodel as modelName recommended_field as field OUTPUT recommended_field
+| where isnotnull(recommended_field)
+| eventstats dc(field) as fieldcount 
+             sum(percent_coverage) as total_percent_coverage
+             by _time, modelName, index, sourcetype
+| eval max_score=100*fieldcount          
+| eval DM_field_health_pct=round((total_percent_coverage/max_score)*100, 2)
+| stats max(DM_field_health_pct) as DM_field_health_pct
+        by _time, modelName, index, sourcetype
+| search modelName="$datamodel$" 
+| search index="$index$" 
+| search sourcetype="$sourcetype$"         
+| stats avg(DM_field_health_pct) as avg_DM_field_health_pct
+     by modelName
+| eval DM_field_health_pct=round(DM_field_health_pct, 2)</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0.0</option>
+        <option name="rangeColors">["0xdc4e41","0xf1813f","0xf8be34","0xa1c724","0x53a051"]</option>
+        <option name="rangeValues">[50,60,70,80]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">1</option>
+        <option name="unit">%</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Data model, index, sourcetype, field coverage</title>
+      <table>
+        <search>
+          <query>`data_model_wrangler_mapping_quality_search` 
+| rename orig_index as index 
+| rename orig_sourcetype as sourcetype 
+| table _time modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct 
+| search modelName="$datamodel$" 
+| search index="$index$" 
+| search sourcetype="$sourcetype$" 
+| stats avg(rec_field_coverage_pct) as avg_rec_field_coverage_pct 
+        dc(index) as index_count
+        dc(sourcetype) as sourcetype_count 
+        by modelName
+| eval avg_rec_field_coverage_pct=round(avg_rec_field_coverage_pct, 2)
+| rename avg_rec_field_coverage_pct as "Field coverage %"
+| table modelName index_count sourcetype_count "Field coverage %"</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="index_count">
+          <colorPalette type="minMidMax" maxColor="#53A051" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="sourcetype_count">
+          <colorPalette type="minMidMax" maxColor="#006D9C" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="avg_rec_field_coverage_pct">
+          <colorPalette type="minMidMax" maxColor="#006D9C" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="Field coverage %">
+          <colorPalette type="minMidMax" maxColor="#5A4575" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="modelName">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="number" field="Field coverage %">
+          <option name="precision">1</option>
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Mapping quality %</title>
+      <chart>
+        <search>
+          <query>`data_model_wrangler_mapping_quality_search`
+| rename orig_index as index 
+| rename orig_sourcetype as sourcetype 
+| table _time modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct 
+| search modelName="*" 
+| search modelName="$datamodel$" 
+| search index="$index$" 
+| search sourcetype="$sourcetype$" 
+| timechart useother=f limit=0 span=1d avg(rec_field_coverage_pct) as avg_rec_field_coverage_pct by modelName 
+| eval avg_rec_field_coverage_pct=round(avg_rec_field_coverage_pct, 2)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.maximumNumber">100</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Field data quality %</title>
+      <chart>
+        <search>
+          <query>`data_model_wrangler_field_quality_search`
+| rename orig_index as index 
+| rename orig_sourcetype as sourcetype 
+| bin _time span=1d 
+| stats latest(percent_coverage) as percent_coverage
+    latest(distinct_value_count) as distinct_value_count
+    by _time modelName, index, field, sourcetype 
+| lookup datamodel_recommended_fields.csv datamodel as modelName recommended_field as field OUTPUT recommended_field
+| where isnotnull(recommended_field)
+| eventstats dc(field) as fieldcount 
+             sum(percent_coverage) as total_percent_coverage
+             by _time, modelName, index, sourcetype
+| eval max_score=100*fieldcount          
+| eval DM_field_health_pct=round((total_percent_coverage/max_score)*100, 2)
+| stats max(DM_field_health_pct) as DM_field_health_pct
+        by _time, modelName, index, sourcetype
+| search modelName="$datamodel$" 
+| search index="$index$" 
+| search sourcetype="$sourcetype$"         
+| timechart useother=f limit=0  span=1d avg(DM_field_health_pct) as avg_DM_field_health_pct
+     by modelName
+| eval DM_field_health_pct=round(DM_field_health_pct, 2)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisY.maximumNumber">100</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Indexes, sourcetypes and fields mapped to data models - Splunk DM recommended field coverage</title>
+      <table>
+        <search base="Base_Search_01">
+          <query>| search modelName="$datamodel$" 
+| search index="$index$" 
+| search sourcetype="$sourcetype$" 
+| makemv splunk_recommended_fields
+| makemv actual_mapped_fields
+| makemv missing_rec_fields
+| stats latest(event_count) as event_count
+        values(splunk_recommended_fields) as splunk_recommended_fields
+        values(actual_mapped_fields) as actual_mapped_fields
+        values(missing_rec_fields) as missing_rec_fields
+        max(rec_field_coverage_pct) as rec_field_coverage_pct
+by  modelName index sourcetype cim_search    
+| table modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct event_count
+| sort -rec_field_coverage_pct modelName index sourcetype</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="rec_field_coverage_pct">
+          <colorPalette type="list">[#FFFFFF,#EEF6EE,#DDECDC,#DDECDC,#CBE3CB,#A9D0A8,#98C697,#87BD85,#75B374,#64AA62,#53A051]</colorPalette>
+          <scale type="threshold">0,10,20,30,40,50,60,70,80,90</scale>
+        </format>
+        <format type="number" field="rec_field_coverage_pct">
+          <option name="precision">1</option>
+          <option name="unit">%</option>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/SA-cim_validator/cim_validator?form.dm=$row.modelName$&amp;form.timerange.earliest=$earliest$&amp;form.timerange.latest=$latest$&amp;form.cim_search=$row.cim_search$&amp;form.search_type=search</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Indexes, sourcetypes and fields mapped to data models</title>
+      <table>
+        <search base="Base_Search_02">
+          <query>| search modelName="$datamodel$"
+| search index="$index$"
+| search sourcetype="$sourcetype$"
+| stats latest(event_count) as event_count
+        latest(distinct_value_count) as distinct_value_count
+        latest(percent_coverage) as percent_coverage
+     by modelName index sourcetype field  
+| fields - count
+| table modelName index sourcetype field percent_coverage distinct_value_count event_count
+| sort modelName index sourcetype field percent_coverage distinct_value_count -event_count</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="field">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="sourcetype">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="count">
+          <colorPalette type="minMidMax" maxColor="#53A051" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="index">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="modelName">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="percent_coverage">
+          <colorPalette type="minMidMax" maxColor="#53A051" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="distinct_value_count">
+          <colorPalette type="map">{"0":#DC4E41}</colorPalette>
+        </format>
+        <format type="number" field="percent_coverage">
+          <option name="precision">1</option>
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

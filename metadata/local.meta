@@ -1,0 +1,81 @@
+[app/ui]
+version = 8.2.2.1
+modtime = 1637643497.299810000
+
+[app/launcher]
+version = 8.2.2.1
+modtime = 1637643497.301289000
+
+[views/data_model_wrangler]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1640145897.944327000
+
+[nav/default]
+version = 8.2.2.1
+modtime = 1637644546.680848000
+
+[indexes/data_model_wrangler]
+owner = admin
+version = 8.2.2.1
+modtime = 1637644603.678004000
+
+[lookups/datamodel_recommended_fields.csv]
+owner = admin
+version = 8.2.2.1
+modtime = 1640220348.437705000
+
+[macros/data_model_wrangler_dm_index_sourcetype_field_search]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1637649170.473529000
+
+[macros/data_model_wrangler_index]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1637649176.027790000
+
+[macros/datamodel_wrangler_data_model_list]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1637649181.568063000
+
+[macros/non_quoted_string%281%29]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1637649255.176757000
+
+[savedsearches/data_model_wrangler_dm_index_sourcetype_field]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1640145956.245278000
+
+[savedsearches/data_model_wrangler_field_quality]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1640145992.644755000
+
+[savedsearches/data_model_wrangler_mapping_quality]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1640146016.509884000
+
+[macros/data_model_wrangler_field_quality_search]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1638226317.159384000
+
+[macros/data_model_wrangler_mapping_quality_search]
+export = none
+owner = admin
+version = 8.2.2.1
+modtime = 1638226322.021366000

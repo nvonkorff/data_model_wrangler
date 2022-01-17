@@ -1,0 +1,4 @@
+<nav search_view="search">
+  <view name="data_model_wrangler" default='true' />
+  <view name="search" />
+</nav>

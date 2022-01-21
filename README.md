@@ -53,6 +53,15 @@ Whenever a CIM mapping requirement comes up, this dashboard provides a quick and
 
 Depending on the size of your environment, some of the saved searches may run for a long time, and may be resource intensive.
 
-# Support
+## Acknowledgements
+The original idea for this app was not mine, but I was chosen to build it. Thanks to the talented team of security professionals for coming up with and providing feedback on the app, and thanks to the organisation where this was developed for approving the app to be released to the public. You know who you are!
 
-Support is provided on a best-effort basis
+## Contribute
+If you would like to contribute, please do so at the following GitHub repository: [GitHub: Data model wrangler](https://github.com/nvonkorff/data_model_wrangler) 
+
+## Support
+
+Support is provided on a best-effort basis in my free time.
+
+If you find this app helpful, please feel free to tip. I accept Dogecoin. My wallet address is: DC39d1d8LgXx2U2iV8r8d3kU7ceLuSEw6u
+

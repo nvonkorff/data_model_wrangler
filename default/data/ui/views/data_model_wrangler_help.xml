@@ -1,0 +1,152 @@
+<dashboard version="1.1" theme="dark">
+  <label>Documentation</label>
+  <row>
+    <panel>
+      <title>Welcome</title>
+      <html>
+Thanks for using the Data model wrangler. This app provides:
+<ul>
+  <li>Visibility over data sources (indexes and sourcetypes) mapped to data models</li>
+  <li>Mapping quality score - Percentage of recommended fields for the data model present for each data source (note: calculated fields can be present in the data model and have a default value e.g. "unknown", but will not appear in the indexed data)</li>
+  <li>Field data quality score - Coverage percentage of recommended fields present in the indexed data</li>
+  <li>Overall quality score - Percentage, comprised of average of Mapping quality score + Field data quality score</li>
+  <li>Historical trending of quality scores for each data model</li>
+  <li>Field-level view of coverage in indexed data for recommended fields</li>
+  <li>Ability to review/track/comment on work required for low quality data sources</li>
+</ul>
+The app tracks data models from the Splunk Common Information model by default, but can be easily extended to cover custom data models as well.
+      </html>
+    </panel>
+    <panel>
+      <title>Dashboards</title>
+      <html>
+The app provides the following dashboards:
+<ul>
+  <li>Data model wrangler</li>
+  <ul>
+    <li>Provides information about data models, the data sources mapped to them. The dashboard flows top to bottom from least specific (data mdodel level) to most specific (data source field level)</li>
+  </ul>
+  <li>Data model review</li>
+    <ul>
+    <li>Provides details from the data_model_wrangler_health_review.csv to aid with reviewing and fixing low quality data sources</li>
+  </ul>
+  <li>Documentation</li>
+    <ul>
+    <li>This dashboard.</li>
+  </ul>  
+</ul>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Workflow</title>
+      <html>
+Typical workflow is as follows:
+<ul>
+  <li>Identify low mapping or field data quality data models ("Data model wrangler" dashboard)</li>
+  <ul>
+    <li>Use the "Data model" drop down to select the data model to show the one you want to target</li>
+    <li>This shows you your Mapping, Field data and Overal quality scores for the selected data model</li>
+  </ul>
+  <li>Identify low mapping quality data sources within the data model ("Data model wrangler" dashboard)</li>
+    <ul>
+     <li>Scroll down to the "Indexes, sourcetypes and fields mapped to data models - Splunk DM recommended field coverage" panel</li>
+     <li>Check for data sources that have low quality scores. You can filter by the following fields to find lowest scores: rec_field_coverage_pct, percent_data_coverage, overall_quality_pct</li>
+     <li>You can select a specific index or sourcetype in the filters at the top of the Data model wrangler dashboard to more specifically target certain data sources</li>
+     <li>For sources that do not have data model fields mapped, check your field aliases, field extractions, calculated fields for that data source to ensure these are defined correctly</li>    
+  </ul>
+  <li>Identify low data quality data sources within the data model ("Data model wrangler" dashboard)</li>
+    <ul>
+     <li>Scroll down to the "Indexes, sourcetypes and fields mapped to data models" panel</li>
+     <li>Select the "Only recommended fields" radio button in input of this panel to hide non-recommended fields</li>
+     <li>Check for fields that have low to zero coverage in the data source</li>
+     <li>Check your field extractions are correct, whether this source is getting incorrectly tagged, or whether it makes more sense to instead remove this data from the data model by untagging it.</li>
+    </ul>
+  <li>Review and track changes ("Data model review" dashboard)</li>
+    <ul>
+     <li>The "Data model review" dashboard allows you to track reviews of data sources</li>
+     <li>There is a link to a lookup (data_model_wrangler_health_review.csv) on this dashboard that you can use to track/review progress (the link relies on the "Lookup Editor" app being installed - otherwise go to Settings>Lookups)</li>
+     <li>For each, data model, index, sourcetype reviewed, add a row to this .csv with the details. For reviewed items:</li>
+      <ul>
+        <li>'reviewed' column, set the value: true </li>
+        <li>'status' column, set the value to one either:</li>
+          <ul>
+            <li>Open</li>
+            <li>In Development</li>
+            <li>Done</li>
+          </ul>
+        <li>'comment' column - put a comment that explains the issue or a link to a JIRA task for instance</li>
+      </ul>  
+    </ul>
+</ul>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Saved searches</title>
+      <html>
+The following saved searches run on a schedule to populate the index with summary data:
+<ul>
+  <li>data_model_wrangler_dm_index_sourcetype_field</li>
+  <ul>
+    <li>For each data model, get a list of indexes and sourcetypes mapped, then for each index and sourcetype, get a list of data model fields available in the data along with counts for each field</li>
+  </ul>
+  <li>data_model_wrangler_field_quality</li>
+    <ul>
+    <li>For entries in the summary index, get the field data quality by checking the coverage percentage of each field in the data, along with the distinct count of values for the field (this data comes from the CIM Validator app)</li>
+  </ul>
+  <li>data_model_wrangler_mapping_quality</li>
+    <ul>
+    <li>For entries in the summary index, get the coverage of recommended fields for each data model, index, sourcetype</li>
+  </ul>  
+</ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Lookups</title>
+      <html>
+The app uses two lookup files. These are:
+<ul>
+  <li>datamodel_recommended_fields.csv</li>
+  <ul>
+    <li>Contains a list of data models and the recommended (as per the Splunk CIM documentation) fields for each data model</li>
+    <li>Add any custom data models and recommended fields to this list to enable the app to calculate coverage scores for custom data models</li>
+  </ul>
+  <li>data_model_wrangler_health_review.csv</li>
+    <ul>
+    <li>A place to track, review and comment on data sources that are reporting low quality</li>
+    <li>This lookup is used by the "Data model review" dashboard</li>
+  </ul>
+</ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Search macros</title>
+      <html>
+The app uses a number of search macros to store key pieces of information and to formulate search queries. These two search macros can be customised to suit your environment:
+<ul>
+  <li>`data_model_wrangler_index`</li>
+  <ul>
+    <li>Index to which summary data will be sent</li>
+    <li>Default: <i>data_model_wrangler</i>
+            </li>
+  </ul>
+  <li>`datamodel_wrangler_data_model_list`</li>
+    <ul>
+    <li>Comma separated list of data models to monitor</li>
+    <li>Default: <i>Authentication, Change, Change_Analysis, DLP, Databases, Email, Endpoint, Intrusion_Detection, Malware, Network_Resolution, Network_Sessions, Network_Traffic, Web</i>
+            </li>    
+  </ul>
+  <li>`data_model_wrangler_health_review_lookup`</li>
+    <ul>
+    <li>The name of the lookup containing review information</li>
+    <li>Default: <i>data_model_wrangler_health_review.csv</i>
+            </li>    
+  </ul>
+</ul>
+      </html>
+    </panel>
+  </row>
+</dashboard>

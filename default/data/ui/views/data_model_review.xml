@@ -1,0 +1,264 @@
+<form version="1.1" theme="dark">
+  <label>Data model review</label>
+    <row>
+        <panel>
+            <html>
+                <style>.btn-primary { margin: 5px 10px 5px 0; }</style>
+                <a href="/app/lookup_editor/lookup_edit?owner=nobody&amp;namespace=data_model_wrangler&amp;lookup=data_model_wrangler_health_review.csv&amp;amp;type=csv" class="btn btn-primary">Open data_model_wrangler_health_review.csv in Lookup Editor</a>
+            </html>
+        </panel>
+    </row>
+  <search id="Base_Search_01">
+    <query>
+`data_model_wrangler_mapping_quality_search`
+| rename orig_index as index
+| rename orig_sourcetype as sourcetype
+| table _time modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct
+|  search modelName="*" 
+| search index="*" 
+| search sourcetype="*" 
+| makemv splunk_recommended_fields
+| makemv actual_mapped_fields
+| makemv missing_rec_fields
+| stats latest(event_count) as event_count
+        values(splunk_recommended_fields) as splunk_recommended_fields
+        values(actual_mapped_fields) as actual_mapped_fields
+        values(missing_rec_fields) as missing_rec_fields
+        max(rec_field_coverage_pct) as rec_field_coverage_pct
+by  modelName index sourcetype cim_search
+|lookup `data_model_wrangler_health_review_lookup` datamodel AS modelName sourcetype index
+| table modelName index sourcetype cim_search rec_field_coverage_pct event_count reviewed status comment
+| where reviewed="true"
+    </query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <search id="Base_Search_02">
+    <query>
+`data_model_wrangler_mapping_quality_search` 
+| rename orig_index as index 
+| rename orig_sourcetype as sourcetype 
+| table _time modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct 
+| search modelName="*" 
+| search index="*" 
+| search sourcetype="*" 
+| makemv splunk_recommended_fields 
+| makemv actual_mapped_fields 
+| makemv missing_rec_fields 
+| stats latest(event_count) as event_count
+    values(splunk_recommended_fields) as splunk_recommended_fields
+    values(actual_mapped_fields) as actual_mapped_fields
+    values(missing_rec_fields) as missing_rec_fields
+    max(rec_field_coverage_pct) as rec_field_coverage_pct
+    by modelName index sourcetype cim_search 
+| lookup `data_model_wrangler_health_review_lookup` datamodel AS modelName sourcetype index 
+| table modelName index sourcetype cim_search splunk_recommended_fields actual_mapped_fields missing_rec_fields rec_field_coverage_pct event_count reviewed status comment 
+| where isnull(reviewed)
+    </query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label>Duration</label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="datamodel">
+      <label>Data model</label>
+      <fieldForLabel>modelName</fieldForLabel>
+      <fieldForValue>modelName</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | search status="$status$"
+          | stats count by modelName</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="index">
+      <label>Index</label>
+      <fieldForLabel>index</fieldForLabel>
+      <fieldForValue>index</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | search status="$status$"
+          | stats count by index</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="sourcetype">
+      <label>Sourcetype</label>
+      <fieldForLabel>sourcetype</fieldForLabel>
+      <fieldForValue>sourcetype</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | search status="$status$"
+          | stats count by sourcetype</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="status">
+      <label>Status</label>
+      <fieldForLabel>status</fieldForLabel>
+      <fieldForValue>status</fieldForValue>
+      <search base="Base_Search_01">
+        <query>
+          | search modelName="$datamodel$"
+          | search index="$index$"
+          | search sourcetype="$sourcetype$"
+          | search status="$status$"
+          | stats count by status</query>
+      </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Reviewed - Done</title>
+      <single>
+        <search base="Base_Search_01">
+          <query>| search modelName="$datamodel$"
+| search index="$index$"
+| search sourcetype="$sourcetype$"
+| search status="$status$"
+| where status="Done"
+| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="height">135</option>
+        <option name="rangeColors">["0x53a051","0x53a051"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.size">large</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Reviewed - In Development</title>
+      <single>
+        <search base="Base_Search_01">
+          <query>| search modelName="$datamodel$"
+| search index="$index$"
+| search sourcetype="$sourcetype$"
+| search sourcetype="$status$"
+| search status="$status$"
+| where status="In Development"
+| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="height">135</option>
+        <option name="rangeColors">["0x6888DE","0x6888DE"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.size">large</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Reviewed - Open</title>
+      <single>
+        <search base="Base_Search_01">
+          <query>| search modelName="$datamodel$"
+| search index="$index$"
+| search sourcetype="$sourcetype$"
+| where status="Open"
+| search status="$status$"
+| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="height">135</option>
+        <option name="rangeColors">["0x8b8eaf","0x8b8eaf"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.size">large</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>To be reviewed - Recommended field coverage &lt; 100%</title>
+      <single>
+        <search base="Base_Search_02">
+          <query>| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="height">135</option>
+        <option name="rangeColors">["0xaa66a6","0xaa66a6"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.size">large</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <search base="Base_Search_01">
+          <query>| search modelName="$datamodel$"
+| search index="$index$"
+| search sourcetype="$sourcetype$"
+| search status="$status$"
+| search rec_field_coverage_pct&lt;100
+| sort status - rec_field_coverage_pct</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="status">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="modelName">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="index">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="sourcetype">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="rec_field_coverage_pct">
+          <colorPalette type="minMidMax" maxColor="#53A051" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

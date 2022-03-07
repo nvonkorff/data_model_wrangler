@@ -1,4 +1,6 @@
 <nav search_view="search">
   <view name="data_model_wrangler" default='true' />
+  <view name="data_model_review"/>
+  <view name="data_model_wrangler_help"/>
   <view name="search" />
 </nav>

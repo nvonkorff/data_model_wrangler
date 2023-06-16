@@ -2,6 +2,7 @@
 # Application-level permissions
 
 []
+import = search, SA-cim_vladiator, Splunk_SA_CIM
 access = read : [ * ], write : [ admin, power ]
 
 ### EVENT TYPES
